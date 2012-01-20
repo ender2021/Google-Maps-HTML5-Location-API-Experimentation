@@ -1,0 +1,51 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Campus QR Codes</title>
+<style type="text/css">
+	#qr-list li {
+		display: block;
+		float: left;
+		width: 250px;
+		height: 200px;
+		margin: 0px;
+		padding: 0px;
+		list-item-style: none;
+		text-align: center;
+	}
+	#qr-list { display: block; width: 500px; height: 600px; }
+	
+	#qr-list img { display: block; margin: 0px auto; }
+</style>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.0/jquery.min.js"></script>
+<script type="text/javascript">
+	var qrcode = function(url, size) { 
+		if(typeof(size) == 'undefined') size = 8;
+		return 'http://qrcode.kaywa.com/img.php?s='+size+'&d='+url;
+	};
+	  
+	$(function() {
+   		$('#qr-list a').each(function() {
+			var qrurl = 'http://php.meaditation.com/MapTests/QRDirections.htm?to=' + $(this).data('latlong') + ',' +$(this).data("title").replace(/ /g, '_');
+			var qrimg = $('<img src="' + qrcode(qrurl, 5) + '" height="160" width="160" />');
+			$(this).attr('href', qrurl).after(qrimg);
+		});
+    });
+</script>
+</head>
+
+<body>
+<h1 style="margin-left: 170px;">Campus Locations</h1>
+
+<ul id="qr-list">
+	<li><a href="#" data-latlong="34.411844,-119.848137" data-title="The UCen">Directions to The UCen</a></li>
+    <li><a href="#" data-latlong="34.41627,-119.845707" data-title="Campbell Hall">Directions to Campbell Hall</a></li>
+    <li><a href="#" data-latlong="34.411216,-119.843046" data-title="Anacapa Dormitory">Directions to Anacapa Dormitory</a></li>
+    <li><a href="#" data-latlong="34.41292,-119.852305" data-title="The SRB">Directions to The SRB</a></li>
+    <li><a href="#" data-latlong="34.415929,-119.847364" data-title="SAASB">Directions to SAASB</a></li>
+    <li><a href="#" data-latlong="34.413283,-119.845868" data-title="Davidson Library">Directions to Davidson Library</a></li>
+</ul>
+
+</body>
+</html>

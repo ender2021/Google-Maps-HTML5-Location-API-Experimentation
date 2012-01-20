@@ -1,0 +1,73 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="HandheldFriendly" content="true" />
+<meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" />
+<title>jQuery + Google Maps API v3 Demo</title>
+<style type="text/css">
+  html { height: 100% }
+  body { height: 100%; margin: 0px; padding: 0px }
+  #map { height: 100% }
+</style>
+</head>
+<body>
+	<div id="map" style="width:100%; height:100%">
+</div>
+
+<script src="../scripts/gears_init.js"></script>
+<script src="../scripts/geo.js"></script>
+<script type="text/javascript" src="../scripts/modernizr-1.6.min.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.0/jquery.min.js"></script>
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+<script type="text/javascript">
+	var map = null;
+	var loc = null;
+	
+	function mapInit(p){
+		var centerCoord = new google.maps.LatLng(p.coords.latitude, p.coords.longitude);
+		var mapOptions = {
+			zoom: 15,
+			center: centerCoord,
+			mapTypeId: google.maps.MapTypeId.ROADMAP
+		};
+		map = new google.maps.Map(document.getElementById("map"), mapOptions);
+		
+		loc = new google.maps.Circle({
+									 center: centerCoord,
+									 clickable: false,
+									 fillColor: "#3399FF",
+									 fillOpacity: 0.5,
+									 radius: p.coords.accuracy,
+									 strokeColor: "#0066CC",
+									 strokeOpacity: 0.8,
+									 strokeWeight: 2
+									 });
+		loc.setMap(map);
+	}
+	
+	function mapUpdate(p) {
+		var centerCoord = new google.maps.LatLng(p.coords.latitude, p.coords.longitude);
+		map.setCenter(centerCoord);
+		loc.setCenter(centerCoord);
+		loc.setRadius(p.coords.accuracy);
+	}
+	
+	function geo_error() {
+		alert('there was an error!');
+	}
+	
+	$(function(){
+		
+		if (geo_position_js.init()) {
+			//geo_position_js.getCurrentPosition(mapInit, geo_error);
+			navigator.geolocation.getCurrentPosition(mapInit, geo_error, { enableHighAccuracy: true });
+			navigator.geolocation.watchPosition(mapUpdate, geo_error, { enableHighAccuracy: true });
+			
+			
+		}
+	});
+	
+</script>
+</body>
+</html>

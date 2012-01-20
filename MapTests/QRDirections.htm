@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="HandheldFriendly" content="true" />
+<meta name="viewport" content="width=device-width, height=device-height, user-scalable=no" />
+<title>jQuery + Google Maps API v3 Demo</title>
+<style type="text/css">
+  html { height: 100% }
+  body { height: 100%; margin: 0px; padding: 0px }
+  #map { height: 75% }
+  #dirPanel { height: 25%; padding: 5px; }
+  #dirHeader { padding: 0px; margin: 0px 0px 5px 0px; text-decoration: underline; width: 100%; }
+  
+  #dirPanel #controls li {
+	  list-style: none;
+	  display: inline;
+	  float: left;
+	  padding-left: 10px;
+  }
+  
+  #dirPanel #controls { margin-top: 10px; }
+</style>
+</head>
+<body>
+	<div id="map" style="width:100%; height:75%"></div>
+   	<div id="dirPanel" style="width:100%; height:25%">
+    	<h4 id="dirHeader">Directions</h4>
+    	<div id="step">Please wait, attempting to locate you...</div>
+        <div id="controls">
+        	<ul>
+            	<li><a href="#" id="prevDir">Previous</a></li>
+                <li><a href="#" id="nextDir">Next</a></li>
+                <li><a href="#" id="refreshDir">Refresh</a></li>
+            </ul>
+        </div>
+    </div>
+
+<script src="../scripts/gears_init.js"></script>
+<script src="../scripts/geo.js"></script>
+<script type="text/javascript" src="../scripts/modernizr-1.6.min.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.0/jquery.min.js"></script>
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+<script type="text/javascript">
+	var map = null;
+	var loc = null;
+	var directions = null;
+	var dirPath = null;
+	var destination = new google.maps.LatLng(34.411818, -119.848115);
+	var destTitle = 'The UCen';
+	var dirService = new google.maps.DirectionsService();
+	var dirDisplay = null;
+	var currPos = null;
+	var dirInit = false;
+	var stepMarker = null;
+	
+	function mapInit(p){
+		currPos = p;
+		var centerCoord = new google.maps.LatLng(p.coords.latitude, p.coords.longitude);
+		var mapOptions = {
+			zoom: 15,
+			center: centerCoord,
+			mapTypeId: google.maps.MapTypeId.ROADMAP
+		};
+		map = new google.maps.Map(document.getElementById("map"), mapOptions);
+		
+		dirDisplay = new google.maps.DirectionsRenderer();
+		dirDisplay.setMap(map);
+		
+		loc = new google.maps.Circle({
+									 center: centerCoord,
+									 clickable: false,
+									 fillColor: "#3399FF",
+									 fillOpacity: 0.5,
+									 radius: p.coords.accuracy,
+									 strokeColor: "#0066CC",
+									 strokeOpacity: 0.8,
+									 strokeWeight: 2
+									 });
+		loc.setMap(map);
+	}
+	
+	function mapUpdate(p) {
+		currPos = p;
+		var centerCoord = new google.maps.LatLng(p.coords.latitude, p.coords.longitude);
+		loc.setCenter(centerCoord);
+		loc.setRadius(p.coords.accuracy);
+		
+		if (p.coords.accuracy <= 25 && !dirInit) {
+			refreshDirections();
+		}
+	}
+	
+	function refreshDirections() {
+		dirInit = true;
+		var centerCoord = new google.maps.LatLng(currPos.coords.latitude, currPos.coords.longitude);
+		var dirOpts = {
+				origin: centerCoord,
+				destination: destination,
+				travelMode: google.maps.DirectionsTravelMode.WALKING
+			};
+			
+			dirService.route(dirOpts, function(result, status) {
+				if (status == google.maps.DirectionsStatus.OK) {
+					dirDisplay.setDirections(result);
+					compileDirections(result);
+					
+					stepMarker = null;
+					var markerOpts = {
+						clickable: false,
+						position: directions[0].location,
+						title: directions[0].text
+					}
+					stepMarker = new google.maps.Marker(markerOpts);
+					stepMarker.setMap(map);
+					
+					$('#dirHeader').text("Directions to " + destTitle);
+					
+					displayDirections(0);										  
+				} else {
+					alert("There was an error with the directions service!");
+				}
+			});
+	}
+	
+	function compileDirections(dirResult) {
+		directions = [];
+		$.each(dirResult.routes[0].legs, function() {
+	   		$.each(this.steps, function() {
+				directions.push({ "text": this.instructions, "location": this.start_location });
+			});
+	   	});
+	}
+	
+	function displayDirections(index) {
+		$('#dirPanel #step').html((index + 1) + ".) " + directions[index].text);
+		$('#dirPanel #step').data('currStep', index);
+		stepMarker.setPosition(directions[index].location);
+		stepMarker.setTitle(directions[index].text);
+	}
+	
+	function geo_error() {
+		alert('there was an error!');
+	}
+	
+	//util for reading query string
+	function getParameterByName( name )
+	{
+		name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+		var regexS = "[\\?&]"+name+"=([^&#]*)";
+		var regex = new RegExp( regexS );
+		var results = regex.exec( window.location.href );
+		if( results == null )
+			return "";
+		else
+			return decodeURIComponent(results[1].replace(/\+/g, " "));
+	}
+	
+	$(function(){
+			   
+		var target = getParameterByName("to");
+		if (target === "") {
+			alert("No target specified! Assuming UCen as destination.");
+		} else {
+			try {
+				var latlong = target.split(",");
+				destination = new google.maps.LatLng(latlong[0], latlong[1]);
+				destTitle = latlong[2].replace(/_/g, ' ');
+			} catch (err) {
+				alert("Malformed target specification! Assuming UCen as destination.");
+			}
+		}
+		
+		if (geo_position_js.init()) {
+			//geo_position_js.getCurrentPosition(mapInit, geo_error);
+			navigator.geolocation.getCurrentPosition(mapInit, geo_error, { enableHighAccuracy: true });
+			navigator.geolocation.watchPosition(mapUpdate, geo_error, { enableHighAccuracy: true });
+		}
+		
+		$('#dirPanel #controls a').click(function(e) {
+	  		e.preventDefault();
+		});
+		
+		$('#refreshDir').click(refreshDirections);
+		$('#nextDir').click(function() {
+		 	if (directions != null) {
+				var next = $('#dirPanel #step').data('currStep') + 1;
+				if (next == directions.length) next = 0;
+				displayDirections(next);
+			}
+		});
+		$('#prevDir').click(function() {
+		 	if (directions != null) {
+				var prev = $('#dirPanel #step').data('currStep') - 1;
+				if (prev == -1) prev = directions.length - 1;
+				displayDirections(prev);
+			}
+		});
+	});
+	
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>jQuery + Google Maps API v3 Demo</title>
+
+<style type="text/css" media="screen">
+	img { border: 0; }
+	#map{
+		width: 800px;
+		height: 500px; 
+	}
+</style>
+</head>
+<body>
+<div id="container">
+	<div id="map"></div>
+</div>
+
+<script src="../scripts/gears_init.js"></script>
+<script src="../scripts/geo.js"></script>
+<script type="text/javascript" src="../scripts/modernizr-1.6.min.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.0/jquery.min.js"></script>
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+<script type="text/javascript">
+	var map = null;
+	var ucen = { lat: 34.411818, long: -119.848115 }
+	var dirPath = null;
+	
+	function mapInit(p){
+		var centerCoord = new google.maps.LatLng(p.coords.latitude, p.coords.longitude);
+		var mapOptions = {
+			zoom: 14,
+			center: centerCoord,
+			mapTypeId: google.maps.MapTypeId.SATELLITE
+		};
+		map = new google.maps.Map(document.getElementById("map"), mapOptions);
+
+	}
+	
+	function mapUpdate(p) {
+		var centerCoord = new google.maps.LatLng(p.coords.latitude, p.coords.longitude);
+		map.setCenter(centerCoord);
+		if (p.coords.accuracy <= 100) {
+		var locStr = p.coords.latitude + ',' + p.coords.longitude;
+		var url = 'getJsonData.php?origin=' + locStr;
+		$.ajax({
+			url: url,
+			dataType: 'json',
+			cache: false,
+			success: function(data) {
+				var coords = [];
+				$.each(data.routes[0].legs, function(i) {
+					$.each(this.steps, function(j) { 
+						coords.push(new google.maps.LatLng(this.start_location.lat, this.start_location.lng));
+						coords.push(new google.maps.LatLng(this.end_location.lat, this.end_location.lng));
+					});
+				});
+				  
+				  dirPath = null;
+				  
+				  dirPath = new google.maps.Polyline({
+					path: coords,
+					strokeColor: "#FF0000",
+					strokeOpacity: 1.0,
+					strokeWeight: 2
+				});
+				
+				  dirPath.setMap(map);
+			}
+		});
+		}
+	}
+	
+	function geo_error() {
+		alert('there was an error!');
+	}
+	
+	$(function(){
+		
+		if (geo_position_js.init()) {
+			//geo_position_js.getCurrentPosition(mapInit, geo_error);
+			navigator.geolocation.getCurrentPosition(mapInit, geo_error, { enableHighAccuracy: true });
+			navigator.geolocation.watchPosition(mapUpdate, geo_error, { enableHighAccuracy: true });
+			
+			
+		}
+	});
+	
+</script>
+</body>
+</html>
